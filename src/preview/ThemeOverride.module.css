@@ -1,0 +1,9 @@
+/* The page background belongs to the builder's own provider, so the preview paints its own */
+.root {
+	background: var(--mantine-color-body);
+	color: var(--mantine-color-text);
+	font-family: var(--mantine-font-family);
+	border-radius: var(--mantine-radius-default);
+	padding: var(--mantine-spacing-lg);
+	min-width: 0;
+}
