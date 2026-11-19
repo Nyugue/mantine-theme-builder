@@ -10,6 +10,7 @@ interface ThemeOverrideProps {
 
 export function ThemeOverride({ theme, colorScheme, children }: ThemeOverrideProps) {
 	const id = useId();
+
 	const [element, setElement] = useState<HTMLDivElement | null>(null);
 
 	const portalTheme = useMemo(
