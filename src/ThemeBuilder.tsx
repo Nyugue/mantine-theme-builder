@@ -33,6 +33,7 @@ import {
 	Switch,
 	Table,
 	Text,
+	Textarea,
 	TextInput,
 	Title,
 	Toggle,
@@ -42,6 +43,7 @@ import { useForm } from "@mantine/form";
 import chroma from "chroma-js";
 import { useState } from "react";
 import { ThemeOverride } from "./components/ThemeOverride";
+import { useStylesheets } from "./use-stylesheets";
 
 const RED = "#b91c1c";
 const ORANGE = "#c2410c";
@@ -231,16 +233,35 @@ const compactDensity = createTheme({
 	},
 });
 
-const initialValues = {
+interface BuilderValues {
+	cornerRadius: string;
+	density: string;
+	primary: string;
+	neutral: string;
+
+	fontUrls: string;
+
+	fontFamily: string;
+	headingsFontFamily: string;
+	monospaceFontFamily: string;
+}
+
+const initialValues: BuilderValues = {
 	cornerRadius: "md",
 	density: "default",
 	primary: AMBER,
 	neutral: NEUTRAL,
+	fontUrls: "",
+	fontFamily: "",
+	headingsFontFamily: "",
+	monospaceFontFamily: "",
 };
 
-type BuilderValues = typeof initialValues;
-
 function valuesToTheme(values: BuilderValues): MantineThemeOverride {
+	const bodyFont = values.fontFamily.trim();
+	const headingsFont = values.headingsFontFamily.trim() || bodyFont;
+	const monospaceFont = values.monospaceFontFamily.trim();
+
 	return mergeThemeOverrides(
 		baseTheme,
 		{
@@ -251,6 +272,9 @@ function valuesToTheme(values: BuilderValues): MantineThemeOverride {
 				dark: generatePalette(values.neutral, DEFAULT_THEME.colors.dark),
 			},
 			defaultRadius: values.cornerRadius === "0" ? 0 : values.cornerRadius,
+			...(bodyFont && { fontFamily: `"${bodyFont}", system-ui, sans-serif` }),
+			...(monospaceFont && { fontFamilyMonospace: `"${monospaceFont}", ui-monospace, monospace` }),
+			...(headingsFont && { headings: { fontFamily: `"${headingsFont}", system-ui, sans-serif` } }),
 		},
 		values.density === "comfortable"
 			? comfortableDensity
@@ -263,106 +287,162 @@ function valuesToTheme(values: BuilderValues): MantineThemeOverride {
 export default function ThemeBuilder() {
 	const { colorScheme } = useMantineColorScheme({ keepTransitions: true });
 
+	const [openSection, setOpenSection] = useState<string | null>("base");
+
 	const [themeOverride, setThemeOverride] = useState(() => valuesToTheme(initialValues));
 
 	const form = useForm<BuilderValues>({
 		mode: "uncontrolled",
 		initialValues,
 		onValuesChange: (values) => setThemeOverride(valuesToTheme(values)),
+		validate: {
+			fontUrls: (text: string) =>
+				text
+					.split("\n")
+					.map((line) => line.trim())
+					.filter(Boolean)
+					.every((url) => URL.canParse(url))
+					? null
+					: "Put one stylesheet URL per line",
+		},
+		validateInputOnChange: ["fontUrls"],
 	});
 
+	const fontUrls = form.useWatchValue("fontUrls");
+
+	useStylesheets(
+		fontUrls
+			.split("\n")
+			.map((line) => line.trim())
+			.filter(Boolean),
+	);
+
 	return (
-		<SimpleGrid cols={{ sm: 1, md: 2 }}>
-			<Card withBorder h="100%" p={0}>
-				<form>
-					<Accordion order={3} defaultValue="base" multiple={false}>
-						<Accordion.Item value="base">
-							<Accordion.Control>Base</Accordion.Control>
-							<Accordion.Panel>
-								<Stack>
-									<Input.Wrapper label="Corner radius">
-										<SegmentedControl
-											key={form.key("cornerRadius")}
-											{...form.getInputProps("cornerRadius")}
-											data={["0", "xs", "sm", "md", "lg", "xl"]}
-											fullWidth
-										/>
-									</Input.Wrapper>
+		<SimpleGrid
+			cols={{ sm: 1, md: 2 }}
+			h={{ md: "calc(100dvh - var(--app-shell-header-offset) - 2 * var(--app-shell-padding))" }}
+		>
+			<Card component="form" withBorder h="100%" p={0} style={{ overflow: "auto" }}>
+				<Accordion
+					order={3}
+					value={openSection}
+					onChange={setOpenSection}
+					style={{ flex: 1, display: "flex", flexDirection: "column" }}
+					disableCollapse
+				>
+					<Accordion.Item value="base" flex={openSection === "base" ? 1 : undefined}>
+						<Accordion.Control>Base</Accordion.Control>
+						<Accordion.Panel>
+							<Stack>
+								<Input.Wrapper label="Corner radius">
+									<SegmentedControl
+										key={form.key("cornerRadius")}
+										{...form.getInputProps("cornerRadius")}
+										data={["0", "xs", "sm", "md", "lg", "xl"]}
+										fullWidth
+									/>
+								</Input.Wrapper>
 
-									<Input.Wrapper label="Density">
-										<SegmentedControl
-											key={form.key("density")}
-											{...form.getInputProps("density")}
-											data={[
-												{ value: "default", label: "Default" },
-												{ value: "comfortable", label: "Comfortable" },
-												{ value: "compact", label: "Compact" },
-											]}
-											fullWidth
-										/>
-									</Input.Wrapper>
+								<Input.Wrapper label="Density">
+									<SegmentedControl
+										key={form.key("density")}
+										{...form.getInputProps("density")}
+										data={[
+											{ value: "default", label: "Default" },
+											{ value: "comfortable", label: "Comfortable" },
+											{ value: "compact", label: "Compact" },
+										]}
+										fullWidth
+									/>
+								</Input.Wrapper>
 
-									<Input.Wrapper label="Primary">
-										<ColorPicker
-											key={form.key("primary")}
-											{...form.getInputProps("primary")}
-											format="hex"
-											swatches={PRIMARY_COLOR_POOL}
-											swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
-											fullWidth
-										/>
-									</Input.Wrapper>
+								<Input.Wrapper label="Primary">
+									<ColorPicker
+										key={form.key("primary")}
+										{...form.getInputProps("primary")}
+										format="hex"
+										swatches={PRIMARY_COLOR_POOL}
+										swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
+										fullWidth
+									/>
+								</Input.Wrapper>
 
-									<Input.Wrapper label="Neutral">
-										<ColorPicker
-											key={form.key("neutral")}
-											{...form.getInputProps("neutral")}
-											format="hex"
-											swatches={NEUTRAL_COLOR_POOL}
-											swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
-											fullWidth
-										/>
-									</Input.Wrapper>
-								</Stack>
-							</Accordion.Panel>
-						</Accordion.Item>
+								<Input.Wrapper label="Neutral">
+									<ColorPicker
+										key={form.key("neutral")}
+										{...form.getInputProps("neutral")}
+										format="hex"
+										swatches={NEUTRAL_COLOR_POOL}
+										swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
+										fullWidth
+									/>
+								</Input.Wrapper>
+							</Stack>
+						</Accordion.Panel>
+					</Accordion.Item>
 
-						<Accordion.Item value="typography">
-							<Accordion.Control>Typography</Accordion.Control>
-							<Accordion.Panel></Accordion.Panel>
-						</Accordion.Item>
-
-						<Accordion.Item value="extra">
-							<Accordion.Control>Extra</Accordion.Control>
-							<Accordion.Panel>
-								<TextInput key={form.key("cardShadow")} {...form.getInputProps("cardShadow")} label="Card shadow" />
-								<TextInput
-									key={form.key("buttonShadow")}
-									{...form.getInputProps("buttonShadow")}
-									label="Button shadow"
+					<Accordion.Item value="typography" flex={openSection === "typography" ? 1 : undefined}>
+						<Accordion.Control>Typography</Accordion.Control>
+						<Accordion.Panel>
+							<Stack>
+								<Textarea
+									key={form.key("fontUrls")}
+									{...form.getInputProps("fontUrls")}
+									label="Font stylesheets"
+									description="One URL per line, from any provider (Google Fonts, Bunny Fonts, Fontshare, ...)"
+									autosize
+									minRows={2}
 								/>
-								<Input.Wrapper label="Page background">
-									<ColorPicker
-										key={form.key("pageBackground")}
-										{...form.getInputProps("pageBackground")}
-										format="hex"
-										swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
-										fullWidth
+								<SimpleGrid cols={{ sm: 1, lg: 3 }} spacing="xs">
+									<TextInput
+										key={form.key("fontFamily")}
+										{...form.getInputProps("fontFamily")}
+										label="Body font"
+										placeholder="System font"
 									/>
-								</Input.Wrapper>
-								<Input.Wrapper label="Links">
-									<ColorPicker
-										key={form.key("accentColor")}
-										{...form.getInputProps("accentColor")}
-										format="hex"
-										swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
-										fullWidth
+									<TextInput
+										key={form.key("monospaceFontFamily")}
+										{...form.getInputProps("monospaceFontFamily")}
+										label="Monospace font"
+										placeholder="System monospace"
 									/>
-								</Input.Wrapper>
-							</Accordion.Panel>
-						</Accordion.Item>
-					</Accordion>
-				</form>
+									<TextInput
+										key={form.key("headingsFontFamily")}
+										{...form.getInputProps("headingsFontFamily")}
+										label="Headings font"
+										placeholder="Same as body"
+									/>
+								</SimpleGrid>
+							</Stack>
+						</Accordion.Panel>
+					</Accordion.Item>
+
+					<Accordion.Item value="extra" flex={openSection === "extra" ? 1 : undefined}>
+						<Accordion.Control>Extra</Accordion.Control>
+						<Accordion.Panel>
+							<TextInput key={form.key("cardShadow")} {...form.getInputProps("cardShadow")} label="Card shadow" />
+							<TextInput key={form.key("buttonShadow")} {...form.getInputProps("buttonShadow")} label="Button shadow" />
+							<Input.Wrapper label="Page background">
+								<ColorPicker
+									key={form.key("pageBackground")}
+									{...form.getInputProps("pageBackground")}
+									format="hex"
+									swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
+									fullWidth
+								/>
+							</Input.Wrapper>
+							<Input.Wrapper label="Accent">
+								<ColorPicker
+									key={form.key("accentColor")}
+									{...form.getInputProps("accentColor")}
+									format="hex"
+									swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
+									fullWidth
+								/>
+							</Input.Wrapper>
+						</Accordion.Panel>
+					</Accordion.Item>
+				</Accordion>
 			</Card>
 			<ThemeOverride theme={themeOverride} colorScheme={colorScheme === "dark" ? "dark" : "light"}>
 				<Card withBorder h="100%">
