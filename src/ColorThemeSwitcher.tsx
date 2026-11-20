@@ -1,28 +1,29 @@
-import { ActionIcon, useMantineColorScheme } from "@mantine/core";
-import { useColorScheme, useLocalStorage } from "@mantine/hooks";
-import { useEffect } from "react";
+import { ActionIcon, useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
+import { flushSync } from "react-dom";
 import { TbMoonFilled, TbSun } from "react-icons/tb";
+import "./color-scheme-curtain.css";
 
 export default function ColorThemeSwitcher() {
-	const systemScheme = useColorScheme("light", { getInitialValueInEffect: false });
+	const { setColorScheme } = useMantineColorScheme();
 
-	const [scheme, setScheme] = useLocalStorage<"dark" | "light">({
-		key: "scheme",
-		defaultValue: systemScheme,
-	});
+	const colorScheme = useComputedColorScheme("light", { getInitialValueInEffect: false });
 
-	const { setColorScheme } = useMantineColorScheme({ keepTransitions: true });
+	const toggle = () => {
+		const next = colorScheme === "dark" ? "light" : "dark";
 
-	useEffect(() => setColorScheme(scheme), [setColorScheme, scheme]);
+		if (!("startViewTransition" in document) || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+			setColorScheme(next);
+			return;
+		}
+
+		document.documentElement.dataset.curtain = next;
+
+		document.startViewTransition(() => flushSync(() => setColorScheme(next)));
+	};
 
 	return (
-		<ActionIcon
-			variant="transparent"
-			size="xl"
-			style={{ cursor: "pointer" }}
-			onClick={() => setScheme(scheme === "dark" ? "light" : "dark")}
-		>
-			{scheme === "light" ? <TbSun /> : <TbMoonFilled />}
+		<ActionIcon variant="transparent" size="xl" aria-label="Toggle colour scheme" onClick={toggle}>
+			{colorScheme === "light" ? <TbSun /> : <TbMoonFilled />}
 		</ActionIcon>
 	);
 }

@@ -1,4 +1,3 @@
-import { generateColors } from "@mantine/colors-generator";
 import {
 	Accordion,
 	ActionIcon,
@@ -37,7 +36,7 @@ import {
 	TextInput,
 	Title,
 	Toggle,
-	useMantineColorScheme,
+	useComputedColorScheme,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import chroma from "chroma-js";
@@ -99,31 +98,56 @@ function generatePalette(color: string, scale: MantineColorsTuple) {
 	return colorsTuple(scale.map((shade) => chroma(color).set("oklch.l", chroma(shade).get("oklch.l")).hex()));
 }
 
+const PRIMARY_SHADE = 7;
+
+const REFERENCE_LIGHTNESS = DEFAULT_THEME.colors.blue.map((shade) => chroma(shade).get("oklch.l"));
+const LIGHTER_POSITIONS = REFERENCE_LIGHTNESS.slice(0, PRIMARY_SHADE + 1).map(
+	(lightness) => (REFERENCE_LIGHTNESS[0] - lightness) / (REFERENCE_LIGHTNESS[0] - REFERENCE_LIGHTNESS[PRIMARY_SHADE]),
+);
+const DARKER_POSITIONS = REFERENCE_LIGHTNESS.slice(PRIMARY_SHADE + 1).map(
+	(lightness) =>
+		(REFERENCE_LIGHTNESS[PRIMARY_SHADE] - lightness) / (REFERENCE_LIGHTNESS[PRIMARY_SHADE] - REFERENCE_LIGHTNESS[9]),
+);
+
+function generateColorPalette(color: string) {
+	const [lightness, chromaValue, hue] = chroma(color).oklch();
+	const safeHue = Number.isNaN(hue) ? 0 : hue; // greys have no hue
+	const lightEnd = chroma.oklch(0.97, chromaValue * 0.15, safeHue);
+	const darkEnd = chroma.oklch(Math.min(lightness * 0.65, 0.42), chromaValue * 0.75, safeHue);
+	const lighter = chroma.scale([lightEnd, color]).mode("oklch");
+	const darker = chroma.scale([color, darkEnd]).mode("oklch");
+	return colorsTuple([
+		...LIGHTER_POSITIONS.map((position) => lighter(position).hex()),
+		...DARKER_POSITIONS.map((position) => darker(position).hex()),
+	]);
+}
+
 const baseTheme = createTheme({
 	autoContrast: true,
 	cursorType: "pointer",
 	respectReducedMotion: true,
 
+	primaryShade: PRIMARY_SHADE,
 	colors: {
 		dark: generatePalette(GREY, DEFAULT_THEME.colors.dark),
 		gray: generatePalette(GREY, DEFAULT_THEME.colors.gray),
-		red: generateColors(RED),
-		orange: generateColors(ORANGE),
-		amber: generateColors(AMBER),
-		yellow: generateColors(YELLOW),
-		lime: generateColors(LIME),
-		green: generateColors(GREEN),
-		emerald: generateColors(EMERALD),
-		teal: generateColors(TEAL),
-		cyan: generateColors(CYAN),
-		sky: generateColors(SKY),
-		blue: generateColors(BLUE),
-		indigo: generateColors(INDIGO),
-		violet: generateColors(VIOLET),
-		grape: generateColors(PURPLE),
-		fuschia: generateColors(FUSCHIA),
-		pink: generateColors(PINK),
-		rose: generateColors(ROSE),
+		red: generateColorPalette(RED),
+		orange: generateColorPalette(ORANGE),
+		amber: generateColorPalette(AMBER),
+		yellow: generateColorPalette(YELLOW),
+		lime: generateColorPalette(LIME),
+		green: generateColorPalette(GREEN),
+		emerald: generateColorPalette(EMERALD),
+		teal: generateColorPalette(TEAL),
+		cyan: generateColorPalette(CYAN),
+		sky: generateColorPalette(SKY),
+		blue: generateColorPalette(BLUE),
+		indigo: generateColorPalette(INDIGO),
+		violet: generateColorPalette(VIOLET),
+		grape: generateColorPalette(PURPLE),
+		fuschia: generateColorPalette(FUSCHIA),
+		pink: generateColorPalette(PINK),
+		rose: generateColorPalette(ROSE),
 	},
 });
 
@@ -267,7 +291,7 @@ function valuesToTheme(values: BuilderValues): MantineThemeOverride {
 		{
 			primaryColor: "primary",
 			colors: {
-				primary: generateColors(values.primary),
+				primary: generateColorPalette(values.primary),
 				gray: generatePalette(values.neutral, DEFAULT_THEME.colors.gray),
 				dark: generatePalette(values.neutral, DEFAULT_THEME.colors.dark),
 			},
@@ -285,7 +309,7 @@ function valuesToTheme(values: BuilderValues): MantineThemeOverride {
 }
 
 export default function ThemeBuilder() {
-	const { colorScheme } = useMantineColorScheme({ keepTransitions: true });
+	const colorScheme = useComputedColorScheme("light", { getInitialValueInEffect: false });
 
 	const [openSection, setOpenSection] = useState<string | null>("base");
 
@@ -444,7 +468,7 @@ export default function ThemeBuilder() {
 					</Accordion.Item>
 				</Accordion>
 			</Card>
-			<ThemeOverride theme={themeOverride} colorScheme={colorScheme === "dark" ? "dark" : "light"}>
+			<ThemeOverride theme={themeOverride} colorScheme={colorScheme}>
 				<Card withBorder h="100%">
 					<Stack>
 						<Group justify="space-between" align="center">

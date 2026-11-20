@@ -4,7 +4,7 @@ import ThemeBuilder from "./ThemeBuilder";
 
 export default function App() {
 	return (
-		<MantineProvider>
+		<MantineProvider defaultColorScheme="auto">
 			<AppShell padding="md" header={{ height: 60 }}>
 				<AppShell.Header component={Group} px="md">
 					<Group justify="space-between" w="100%">
