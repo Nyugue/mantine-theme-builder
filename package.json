@@ -18,7 +18,6 @@
 	},
 	"dependencies": {
 		"@mantine/code-highlight": "^9.8.1",
-		"@mantine/colors-generator": "^9.8.1",
 		"@mantine/core": "^9.8.1",
 		"@mantine/form": "^9.8.1",
 		"@mantine/hooks": "^9.8.1",

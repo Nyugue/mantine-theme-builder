@@ -1,0 +1,110 @@
+/*
+ * Curtain: https://github.com/radix-ui/website/blob/main/components/magic-curtain.module.css (MIT)
+ */
+
+:root[data-color-scheme-transition="curtain"]::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+:root[data-color-scheme-transition="curtain"]::view-transition-old(root) {
+	z-index: 1;
+	mix-blend-mode: normal;
+	animation: color-scheme-curtain 600ms ease-in-out both;
+}
+
+:root[data-color-scheme-transition="curtain"][data-mantine-color-scheme="light"]::view-transition-old(root) {
+	animation-name: color-scheme-curtain-reverse;
+}
+
+@media (min-width: 1280px) {
+	:root[data-color-scheme-transition="curtain"]::view-transition-old(root) {
+		animation-duration: 800ms;
+	}
+}
+
+@keyframes color-scheme-curtain {
+	from {
+		clip-path: polygon(0 0, 120% 0, 100% 100%, 0 100%);
+	}
+
+	to {
+		clip-path: polygon(0 0, -20% 0, 0 100%, 0 100%);
+	}
+}
+
+@keyframes color-scheme-curtain-reverse {
+	from {
+		clip-path: polygon(-20% 0, 100% 0, 100% 100%, 0 100%);
+	}
+
+	to {
+		clip-path: polygon(120% 0, 100% 0, 100% 100%, 100% 100%);
+	}
+}
+
+@media (min-width: 1000px) {
+	@keyframes color-scheme-curtain {
+		from {
+			clip-path: polygon(0 0, 105% 0, 100% 100%, 0 100%);
+		}
+
+		to {
+			clip-path: polygon(0 0, -5% 0, 0 100%, 0 100%);
+		}
+	}
+
+	@keyframes color-scheme-curtain-reverse {
+		from {
+			clip-path: polygon(-5% 0, 100% 0, 100% 100%, 0 100%);
+		}
+
+		to {
+			clip-path: polygon(105% 0, 100% 0, 100% 100%, 100% 100%);
+		}
+	}
+}
+
+:root[data-color-scheme-transition="circle"]::view-transition-old(root),
+:root[data-color-scheme-transition="gif"]::view-transition-old(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+:root[data-color-scheme-transition="circle"]::view-transition-new(root) {
+	mix-blend-mode: normal;
+	animation: color-scheme-circle 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes color-scheme-circle {
+	from {
+		clip-path: circle(0 at var(--color-scheme-transition-x) var(--color-scheme-transition-y));
+	}
+
+	to {
+		clip-path: circle(150vmax at var(--color-scheme-transition-x) var(--color-scheme-transition-y));
+	}
+}
+
+/* Grows until the GIF fits the screen, holds, then blows up to cover it. */
+:root[data-color-scheme-transition="gif"]::view-transition-new(root) {
+	mix-blend-mode: normal;
+	mask: var(--color-scheme-transition-mask) center / 0 0 no-repeat;
+	animation: color-scheme-gif 2.5s ease-in both;
+}
+
+@keyframes color-scheme-gif {
+	0% {
+		mask-size: 0 0;
+	}
+
+	10%,
+	90% {
+		mask-size: var(--color-scheme-transition-mask-width) var(--color-scheme-transition-mask-height);
+	}
+
+	100% {
+		mask-size: calc(var(--color-scheme-transition-mask-width) * 40)
+			calc(var(--color-scheme-transition-mask-height) * 40);
+	}
+}

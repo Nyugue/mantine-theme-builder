@@ -44,7 +44,7 @@ import { useState } from "react";
 import { ThemeOverride } from "./components/ThemeOverride";
 import { useStylesheets } from "./use-stylesheets";
 
-const RED = "#b91c1c";
+const RED = "#dc2626";
 const ORANGE = "#c2410c";
 const AMBER = "#b45309";
 const YELLOW = "#a16207";
@@ -148,6 +148,11 @@ const baseTheme = createTheme({
 		fuschia: generateColorPalette(FUSCHIA),
 		pink: generateColorPalette(PINK),
 		rose: generateColorPalette(ROSE),
+	},
+
+	components: {
+		// Smal trick to force the autocontrast because "the autoContrast feature works only if you use the color prop" (https://mantine.dev/core/badge/#auto-contrast)
+		Badge: Badge.extend({ defaultProps: { color: "primary" } }),
 	},
 });
 

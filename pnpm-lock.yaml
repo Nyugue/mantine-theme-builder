@@ -11,9 +11,6 @@ importers:
       '@mantine/code-highlight':
         specifier: ^9.8.1
         version: 9.8.1(@mantine/core@9.8.1(@mantine/hooks@9.8.1(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@mantine/hooks@9.8.1(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@mantine/colors-generator':
-        specifier: ^9.8.1
-        version: 9.8.1(chroma-js@3.3.0)
       '@mantine/core':
         specifier: ^9.8.1
         version: 9.8.1(@mantine/hooks@9.8.1(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -276,11 +273,6 @@ packages:
       '@mantine/hooks': 9.8.1
       react: ^19.2.0
       react-dom: ^19.2.0
-
-  '@mantine/colors-generator@9.8.1':
-    resolution: {integrity: sha512-Vzrlu6kM0C2ls5tjp6Do3CMyPbWBuPl2ty0MPBhKgTlVRv2IZWV352fPOlVVYnZNuy9ojS0zaulQDJ+3oHO/Jw==}
-    peerDependencies:
-      chroma-js: '>=2.4.2'
 
   '@mantine/core@9.8.1':
     resolution: {integrity: sha512-+ayBTxun7MslJL6x4qaylVy6TyHu3o68+PH22gt70eJSHgy0CHYR/c2q+BYxS8WvORuc4f5mr0xFbi0vzlgHug==}
@@ -1282,10 +1274,6 @@ snapshots:
       diff: 9.0.0
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
-
-  '@mantine/colors-generator@9.8.1(chroma-js@3.3.0)':
-    dependencies:
-      chroma-js: 3.3.0
 
   '@mantine/core@9.8.1(@mantine/hooks@9.8.1(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:

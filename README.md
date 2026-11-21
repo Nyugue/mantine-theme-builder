@@ -16,6 +16,11 @@ pnpm build      # production build to dist/
 
 Pushing to `main` deploys to GitHub Pages.
 
+## References
+
+- [Mantine Hub](https://mantinehub.com/)
+- [tweakcn](https://tweakcn.com/)
+
 ## License
 
 [MIT](LICENSE)
