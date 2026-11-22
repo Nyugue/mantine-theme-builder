@@ -1,6 +1,8 @@
 import {
 	Accordion,
 	ActionIcon,
+	Anchor,
+	AppShell,
 	Badge,
 	Button,
 	Card,
@@ -13,6 +15,7 @@ import {
 	createTheme,
 	DEFAULT_THEME,
 	Group,
+	Image,
 	Input,
 	Kbd,
 	type MantineColorsTuple,
@@ -25,7 +28,6 @@ import {
 	Rating,
 	rem,
 	SegmentedControl,
-	SimpleGrid,
 	Slider,
 	Stack,
 	Stepper,
@@ -36,11 +38,13 @@ import {
 	TextInput,
 	Title,
 	Toggle,
+	useAppShellResize,
 	useComputedColorScheme,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import chroma from "chroma-js";
 import { useState } from "react";
+import ColorThemeSwitcher from "./ColorThemeSwitcher";
 import { ThemeOverride } from "./components/ThemeOverride";
 import { useStylesheets } from "./use-stylesheets";
 
@@ -151,7 +155,7 @@ const baseTheme = createTheme({
 	},
 
 	components: {
-		// Smal trick to force the autocontrast because "the autoContrast feature works only if you use the color prop" (https://mantine.dev/core/badge/#auto-contrast)
+		// Small trick to force the autocontrast because "the autoContrast feature works only if you use the color prop" (https://mantine.dev/core/badge/#auto-contrast)
 		Badge: Badge.extend({ defaultProps: { color: "primary" } }),
 	},
 });
@@ -273,6 +277,11 @@ interface BuilderValues {
 	fontFamily: string;
 	headingsFontFamily: string;
 	monospaceFontFamily: string;
+
+	pageBackground: string | undefined;
+	accentColor: string | undefined;
+	buttonShadow: string;
+	cardShadow: string;
 }
 
 const initialValues: BuilderValues = {
@@ -284,6 +293,10 @@ const initialValues: BuilderValues = {
 	fontFamily: "",
 	headingsFontFamily: "",
 	monospaceFontFamily: "",
+	pageBackground: undefined,
+	accentColor: undefined,
+	buttonShadow: "",
+	cardShadow: "",
 };
 
 function valuesToTheme(values: BuilderValues): MantineThemeOverride {
@@ -299,11 +312,17 @@ function valuesToTheme(values: BuilderValues): MantineThemeOverride {
 				primary: generateColorPalette(values.primary),
 				gray: generatePalette(values.neutral, DEFAULT_THEME.colors.gray),
 				dark: generatePalette(values.neutral, DEFAULT_THEME.colors.dark),
+				...(values.accentColor && { accent: generateColorPalette(values.accentColor) }),
 			},
 			defaultRadius: values.cornerRadius === "0" ? 0 : values.cornerRadius,
 			...(bodyFont && { fontFamily: `"${bodyFont}", system-ui, sans-serif` }),
 			...(monospaceFont && { fontFamilyMonospace: `"${monospaceFont}", ui-monospace, monospace` }),
 			...(headingsFont && { headings: { fontFamily: `"${headingsFont}", system-ui, sans-serif` } }),
+			components: {
+				Anchor: Anchor.extend({ defaultProps: { c: "accent", style: { textDecoration: "none" } } }),
+				Card: Card.extend({ defaultProps: { shadow: values.cardShadow } }),
+				Button: Button.extend({ defaultProps: { style: { boxShadow: values.buttonShadow } } }),
+			},
 		},
 		values.density === "comfortable"
 			? comfortableDensity
@@ -314,6 +333,10 @@ function valuesToTheme(values: BuilderValues): MantineThemeOverride {
 }
 
 export default function ThemeBuilder() {
+	const resize = useAppShellResize({
+		navbar: { min: 250, max: 500 },
+	});
+
 	const colorScheme = useComputedColorScheme("light", { getInitialValueInEffect: false });
 
 	const [openSection, setOpenSection] = useState<string | null>("base");
@@ -347,11 +370,19 @@ export default function ThemeBuilder() {
 	);
 
 	return (
-		<SimpleGrid
-			cols={{ sm: 1, md: 2 }}
-			h={{ md: "calc(100dvh - var(--app-shell-header-offset) - 2 * var(--app-shell-padding))" }}
-		>
-			<Card component="form" withBorder h="100%" p={0} style={{ overflow: "auto" }}>
+		<AppShell padding="md" header={{ height: 60 }} navbar={{ width: 300, breakpoint: "sm" }} resize={resize}>
+			<AppShell.Header component={Group} px="md">
+				<Group justify="space-between" w="100%">
+					<Group>
+						<Image src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" w={28} h={28} />
+						<Title size="md">Mantine theme builder</Title>
+					</Group>
+
+					<ColorThemeSwitcher />
+				</Group>
+			</AppShell.Header>
+
+			<AppShell.Navbar>
 				<Accordion
 					order={3}
 					value={openSection}
@@ -378,7 +409,7 @@ export default function ThemeBuilder() {
 										{...form.getInputProps("density")}
 										data={[
 											{ value: "default", label: "Default" },
-											{ value: "comfortable", label: "Comfortable" },
+											{ value: "comfortable", label: "Comfy" },
 											{ value: "compact", label: "Compact" },
 										]}
 										fullWidth
@@ -418,30 +449,44 @@ export default function ThemeBuilder() {
 									key={form.key("fontUrls")}
 									{...form.getInputProps("fontUrls")}
 									label="Font stylesheets"
-									description="One URL per line, from any provider (Google Fonts, Bunny Fonts, Fontshare, ...)"
+									description={
+										<Text c="dimmed" size="xs">
+											Any provider :{" "}
+											<Anchor href="https://fonts.google.com/" target="_blank">
+												Google
+											</Anchor>
+											,{" "}
+											<Anchor href="https://fonts.bunny.net/" target="_blank">
+												Bunny Fonts
+											</Anchor>
+											,{" "}
+											<Anchor href="https://www.fontshare.com/" target="_blank">
+												Fontshare
+											</Anchor>
+										</Text>
+									}
 									autosize
 									minRows={2}
 								/>
-								<SimpleGrid cols={{ sm: 1, lg: 3 }} spacing="xs">
-									<TextInput
-										key={form.key("fontFamily")}
-										{...form.getInputProps("fontFamily")}
-										label="Body font"
-										placeholder="System font"
-									/>
-									<TextInput
-										key={form.key("monospaceFontFamily")}
-										{...form.getInputProps("monospaceFontFamily")}
-										label="Monospace font"
-										placeholder="System monospace"
-									/>
-									<TextInput
-										key={form.key("headingsFontFamily")}
-										{...form.getInputProps("headingsFontFamily")}
-										label="Headings font"
-										placeholder="Same as body"
-									/>
-								</SimpleGrid>
+
+								<TextInput
+									key={form.key("fontFamily")}
+									{...form.getInputProps("fontFamily")}
+									label="Body font"
+									placeholder="System font"
+								/>
+								<TextInput
+									key={form.key("monospaceFontFamily")}
+									{...form.getInputProps("monospaceFontFamily")}
+									label="Monospace font"
+									placeholder="System monospace"
+								/>
+								<TextInput
+									key={form.key("headingsFontFamily")}
+									{...form.getInputProps("headingsFontFamily")}
+									label="Headings font"
+									placeholder="Same as body"
+								/>
 							</Stack>
 						</Accordion.Panel>
 					</Accordion.Item>
@@ -449,8 +494,33 @@ export default function ThemeBuilder() {
 					<Accordion.Item value="extra" flex={openSection === "extra" ? 1 : undefined}>
 						<Accordion.Control>Extra</Accordion.Control>
 						<Accordion.Panel>
-							<TextInput key={form.key("cardShadow")} {...form.getInputProps("cardShadow")} label="Card shadow" />
-							<TextInput key={form.key("buttonShadow")} {...form.getInputProps("buttonShadow")} label="Button shadow" />
+							<Anchor href="https://getcssscan.com/css-box-shadow-examples" target="_blank" size="xs">
+								Shadow examples
+							</Anchor>
+							<TextInput
+								key={form.key("cardShadow")}
+								{...form.getInputProps("cardShadow")}
+								label="Card shadow"
+								onPaste={(e) => {
+									form.setValues({
+										cardShadow: e.clipboardData.getData("text").replace("box-shadow:", "").trim().replaceAll(";", ""),
+									});
+
+									e.preventDefault();
+								}}
+							/>
+							<TextInput
+								key={form.key("buttonShadow")}
+								{...form.getInputProps("buttonShadow")}
+								label="Button shadow"
+								onPaste={(e) => {
+									form.setValues({
+										buttonShadow: e.clipboardData.getData("text").replace("box-shadow:", "").trim().replaceAll(";", ""),
+									});
+
+									e.preventDefault();
+								}}
+							/>
 							<Input.Wrapper label="Page background">
 								<ColorPicker
 									key={form.key("pageBackground")}
@@ -472,53 +542,58 @@ export default function ThemeBuilder() {
 						</Accordion.Panel>
 					</Accordion.Item>
 				</Accordion>
-			</Card>
+			</AppShell.Navbar>
+
 			<ThemeOverride theme={themeOverride} colorScheme={colorScheme}>
-				<Card withBorder h="100%">
-					<Stack>
-						<Group justify="space-between" align="center">
-							<Title order={2}>Live preview</Title>
+				<AppShell.Main>
+					<Card withBorder h="100%">
+						<Stack>
+							<Group justify="space-between" align="center">
+								<Title order={2}>Live preview</Title>
 
-							<Group>
-								<Badge>New</Badge>
-								<Badge variant="light">Light</Badge>
-								<Badge variant="outline">Outline</Badge>
-							</Group>
-						</Group>
-
-						<Text c="dimmed">Dimmed text under a heading.</Text>
-
-						<Card withBorder>
-							<Stack>
-								<Title order={4}>Sign in</Title>
-								<TextInput label="Email" placeholder="you@example.com" />
-								<Switch label="Remember me" defaultChecked />
-								<Group grow>
-									<Button>Continue</Button>
-									<Button variant="default">Cancel</Button>
+								<Group>
+									<Badge>New</Badge>
+									<Badge variant="light">Light</Badge>
+									<Badge variant="outline">Outline</Badge>
 								</Group>
-							</Stack>
-						</Card>
+							</Group>
 
-						<Radio.Group defaultValue="weekly" label="Digest">
-							<Stack>
-								<Radio.Card value="weekly">
-									<Group wrap="nowrap">
-										<Radio.Indicator />
-										<Text fw={600}>Weekly</Text>
+							<Text c="dimmed">
+								Dimmed text under a <Anchor>heading.</Anchor>
+							</Text>
+
+							<Card withBorder>
+								<Stack>
+									<Title order={4}>Sign in</Title>
+									<TextInput label="Email" placeholder="you@example.com" />
+									<Switch label="Remember me" defaultChecked />
+									<Group grow>
+										<Button>Continue</Button>
+										<Button variant="default">Cancel</Button>
 									</Group>
-								</Radio.Card>
-								<Radio.Card value="daily">
-									<Group wrap="nowrap">
-										<Radio.Indicator />
-										<Text fw={600}>Daily</Text>
-									</Group>
-								</Radio.Card>
-							</Stack>
-						</Radio.Group>
-					</Stack>
-				</Card>
+								</Stack>
+							</Card>
+
+							<Radio.Group defaultValue="weekly" label="Digest">
+								<Stack>
+									<Radio.Card value="weekly">
+										<Group wrap="nowrap">
+											<Radio.Indicator />
+											<Text fw={600}>Weekly</Text>
+										</Group>
+									</Radio.Card>
+									<Radio.Card value="daily">
+										<Group wrap="nowrap">
+											<Radio.Indicator />
+											<Text fw={600}>Daily</Text>
+										</Group>
+									</Radio.Card>
+								</Stack>
+							</Radio.Group>
+						</Stack>
+					</Card>
+				</AppShell.Main>
 			</ThemeOverride>
-		</SimpleGrid>
+		</AppShell>
 	);
 }
