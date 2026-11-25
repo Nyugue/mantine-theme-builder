@@ -1,14 +1,21 @@
-import { Box, MantineProvider, type MantineThemeOverride, MantineThemeProvider } from "@mantine/core";
+import {
+	Box,
+	type CSSVariablesResolver,
+	MantineProvider,
+	type MantineThemeOverride,
+	MantineThemeProvider,
+} from "@mantine/core";
 import { type ReactNode, useId, useMemo, useState } from "react";
 import classes from "./ThemeOverride.module.css";
 
 interface ThemeOverrideProps {
 	theme: MantineThemeOverride;
+	cssVariablesResolver?: CSSVariablesResolver;
 	colorScheme: "light" | "dark";
 	children: ReactNode;
 }
 
-export function ThemeOverride({ theme, colorScheme, children }: ThemeOverrideProps) {
+export function ThemeOverride({ theme, cssVariablesResolver, colorScheme, children }: ThemeOverrideProps) {
 	const id = useId();
 
 	const [element, setElement] = useState<HTMLDivElement | null>(null);
@@ -23,6 +30,7 @@ export function ThemeOverride({ theme, colorScheme, children }: ThemeOverridePro
 			{element && (
 				<MantineProvider
 					theme={theme}
+					cssVariablesResolver={cssVariablesResolver}
 					forceColorScheme={colorScheme}
 					cssVariablesSelector={`[data-preview="${id}"]`}
 					getRootElement={() => element}

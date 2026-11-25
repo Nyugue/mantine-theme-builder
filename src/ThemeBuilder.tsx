@@ -9,20 +9,28 @@ import {
 	Checkbox,
 	Chip,
 	CloseButton,
-	ColorPicker,
+	ColorInput,
 	Combobox,
+	type CSSVariablesResolver,
 	colorsTuple,
 	createTheme,
 	DEFAULT_THEME,
+	Divider,
+	Fieldset,
 	Group,
+	HoverCard,
 	Image,
 	Input,
 	Kbd,
 	type MantineColorsTuple,
 	type MantineThemeOverride,
+	Menu,
 	mergeThemeOverrides,
+	Notification,
 	Pagination,
+	Paper,
 	Pill,
+	Popover,
 	Radio,
 	RangeSlider,
 	Rating,
@@ -33,6 +41,7 @@ import {
 	Stepper,
 	Switch,
 	Table,
+	Tabs,
 	Text,
 	Textarea,
 	TextInput,
@@ -44,6 +53,7 @@ import {
 import { useForm } from "@mantine/form";
 import chroma from "chroma-js";
 import { useState } from "react";
+import { BackofficePreview } from "./BackofficePreview";
 import ColorThemeSwitcher from "./ColorThemeSwitcher";
 import { ThemeOverride } from "./components/ThemeOverride";
 import { useStylesheets } from "./use-stylesheets";
@@ -72,7 +82,7 @@ const ZINC = "#3f3f46";
 const NEUTRAL = "#404040";
 const STONE = "#44403c";
 
-const PRIMARY_COLOR_POOL = [
+const COLOR_PALETTE = [
 	RED,
 	ORANGE,
 	AMBER,
@@ -90,16 +100,19 @@ const PRIMARY_COLOR_POOL = [
 	FUSCHIA,
 	PINK,
 	ROSE,
+	SLATE,
+	GREY,
+	ZINC,
+	NEUTRAL,
+	STONE,
 ];
 
-const NEUTRAL_COLOR_POOL = [SLATE, GREY, ZINC, NEUTRAL, STONE];
-
-const PALETTES = [PRIMARY_COLOR_POOL, NEUTRAL_COLOR_POOL];
-
-const NUMBER_OF_COLOR_SWATCHES = Math.max(...PALETTES.map((palette) => palette.length));
+function matchLightness(color: string, reference: string) {
+	return chroma(color).set("oklch.l", chroma(reference).get("oklch.l")).hex();
+}
 
 function generatePalette(color: string, scale: MantineColorsTuple) {
-	return colorsTuple(scale.map((shade) => chroma(color).set("oklch.l", chroma(shade).get("oklch.l")).hex()));
+	return colorsTuple(scale.map((shade) => matchLightness(color, shade)));
 }
 
 const PRIMARY_SHADE = 7;
@@ -115,11 +128,15 @@ const DARKER_POSITIONS = REFERENCE_LIGHTNESS.slice(PRIMARY_SHADE + 1).map(
 
 function generateColorPalette(color: string) {
 	const [lightness, chromaValue, hue] = chroma(color).oklch();
-	const safeHue = Number.isNaN(hue) ? 0 : hue; // greys have no hue
+
+	const safeHue = Number.isNaN(hue) ? 0 : hue;
+
 	const lightEnd = chroma.oklch(0.97, chromaValue * 0.15, safeHue);
-	const darkEnd = chroma.oklch(Math.min(lightness * 0.65, 0.42), chromaValue * 0.75, safeHue);
 	const lighter = chroma.scale([lightEnd, color]).mode("oklch");
+
+	const darkEnd = chroma.oklch(Math.min(lightness * 0.65, 0.42), chromaValue * 0.75, safeHue);
 	const darker = chroma.scale([color, darkEnd]).mode("oklch");
+
 	return colorsTuple([
 		...LIGHTER_POSITIONS.map((position) => lighter(position).hex()),
 		...DARKER_POSITIONS.map((position) => darker(position).hex()),
@@ -132,26 +149,22 @@ const baseTheme = createTheme({
 	respectReducedMotion: true,
 
 	primaryShade: PRIMARY_SHADE,
+
 	colors: {
 		dark: generatePalette(GREY, DEFAULT_THEME.colors.dark),
 		gray: generatePalette(GREY, DEFAULT_THEME.colors.gray),
 		red: generateColorPalette(RED),
 		orange: generateColorPalette(ORANGE),
-		amber: generateColorPalette(AMBER),
 		yellow: generateColorPalette(YELLOW),
 		lime: generateColorPalette(LIME),
 		green: generateColorPalette(GREEN),
-		emerald: generateColorPalette(EMERALD),
 		teal: generateColorPalette(TEAL),
 		cyan: generateColorPalette(CYAN),
-		sky: generateColorPalette(SKY),
 		blue: generateColorPalette(BLUE),
 		indigo: generateColorPalette(INDIGO),
 		violet: generateColorPalette(VIOLET),
 		grape: generateColorPalette(PURPLE),
-		fuschia: generateColorPalette(FUSCHIA),
 		pink: generateColorPalette(PINK),
-		rose: generateColorPalette(ROSE),
 	},
 
 	components: {
@@ -282,6 +295,7 @@ interface BuilderValues {
 	accentColor: string | undefined;
 	buttonShadow: string;
 	cardShadow: string;
+	borderColor: string | undefined;
 }
 
 const initialValues: BuilderValues = {
@@ -297,7 +311,58 @@ const initialValues: BuilderValues = {
 	accentColor: undefined,
 	buttonShadow: "",
 	cardShadow: "",
+	borderColor: undefined,
 };
+
+const cssVariablesResolver: CSSVariablesResolver = ({ other }) => ({
+	variables: {},
+	light: {
+		...(other.pageBackground && { "--mantine-color-body": other.pageBackground.light }),
+		...(other.borderColor && { "--mantine-color-default-border": other.borderColor.light }),
+	},
+	dark: {
+		...(other.pageBackground && { "--mantine-color-body": other.pageBackground.dark }),
+		...(other.borderColor && { "--mantine-color-default-border": other.borderColor.dark }),
+	},
+});
+
+const DEFAULT_BORDER = "var(--mantine-color-default-border)";
+const DEFAULT_BORDER_SHADES = { "--mantine-color-gray-4": DEFAULT_BORDER, "--mantine-color-dark-4": DEFAULT_BORDER };
+
+const borderColorTheme = createTheme({
+	components: {
+		Input: Input.extend({
+			styles: (_theme, props) => ({
+				wrapper:
+					!props.error && !props.success && (props.variant ?? "default") === "default"
+						? { "--input-bd": DEFAULT_BORDER }
+						: {},
+			}),
+		}),
+
+		Checkbox: Checkbox.extend({ styles: { input: DEFAULT_BORDER_SHADES } }),
+		CheckboxIndicator: Checkbox.Indicator.extend({ styles: { indicator: DEFAULT_BORDER_SHADES } }),
+		Radio: Radio.extend({ styles: { radio: DEFAULT_BORDER_SHADES } }),
+		RadioIndicator: Radio.Indicator.extend({ styles: { indicator: DEFAULT_BORDER_SHADES } }),
+		Pagination: Pagination.extend({ styles: { control: DEFAULT_BORDER_SHADES } }),
+		Fieldset: Fieldset.extend({ styles: { root: { borderColor: DEFAULT_BORDER } } }),
+		CheckboxCard: Checkbox.Card.extend({ styles: { card: { borderColor: DEFAULT_BORDER } } }),
+		RadioCard: Radio.Card.extend({ styles: { card: { borderColor: DEFAULT_BORDER } } }),
+		Notification: Notification.extend({ styles: { root: { borderColor: DEFAULT_BORDER } } }),
+		Kbd: Kbd.extend({ styles: { root: { borderColor: DEFAULT_BORDER } } }),
+
+		Divider: Divider.extend({ defaultProps: { color: DEFAULT_BORDER } }),
+		Table: Table.extend({ defaultProps: { borderColor: DEFAULT_BORDER } }),
+
+		Popover: Popover.extend({ styles: { dropdown: { "--popover-border-color": DEFAULT_BORDER } } }),
+		Menu: Menu.extend({ styles: { dropdown: { "--popover-border-color": DEFAULT_BORDER } } }),
+		HoverCard: HoverCard.extend({ styles: { dropdown: { "--popover-border-color": DEFAULT_BORDER } } }),
+		Paper: Paper.extend({ styles: { root: { "--paper-border-color": DEFAULT_BORDER } } }),
+		Card: Card.extend({ styles: { section: { "--border-color": DEFAULT_BORDER } } }),
+		Accordion: Accordion.extend({ styles: { item: { "--item-border-color": DEFAULT_BORDER } } }),
+		Tabs: Tabs.extend({ styles: { root: { "--tab-border-color": DEFAULT_BORDER } } }),
+	},
+});
 
 function valuesToTheme(values: BuilderValues): MantineThemeOverride {
 	const bodyFont = values.fontFamily.trim();
@@ -318,10 +383,24 @@ function valuesToTheme(values: BuilderValues): MantineThemeOverride {
 			...(bodyFont && { fontFamily: `"${bodyFont}", system-ui, sans-serif` }),
 			...(monospaceFont && { fontFamilyMonospace: `"${monospaceFont}", ui-monospace, monospace` }),
 			...(headingsFont && { headings: { fontFamily: `"${headingsFont}", system-ui, sans-serif` } }),
+			other: {
+				...(values.pageBackground && {
+					pageBackground: {
+						light: values.pageBackground,
+						dark: matchLightness(values.pageBackground, DEFAULT_THEME.colors.dark[7]),
+					},
+				}),
+				...(values.borderColor && {
+					borderColor: {
+						light: values.borderColor,
+						dark: values.borderColor, // matchLightness(values.borderColor, DEFAULT_THEME.colors.dark[4]),
+					},
+				}),
+			},
 			components: {
 				Anchor: Anchor.extend({ defaultProps: { c: "accent", style: { textDecoration: "none" } } }),
-				Card: Card.extend({ defaultProps: { shadow: values.cardShadow } }),
 				Button: Button.extend({ defaultProps: { style: { boxShadow: values.buttonShadow } } }),
+				Card: Card.extend({ defaultProps: { shadow: values.cardShadow } }),
 			},
 		},
 		values.density === "comfortable"
@@ -329,6 +408,7 @@ function valuesToTheme(values: BuilderValues): MantineThemeOverride {
 			: values.density === "compact"
 				? compactDensity
 				: defaultDensity,
+		values.borderColor ? borderColorTheme : {},
 	);
 }
 
@@ -346,7 +426,16 @@ export default function ThemeBuilder() {
 	const form = useForm<BuilderValues>({
 		mode: "uncontrolled",
 		initialValues,
-		onValuesChange: (values) => setThemeOverride(valuesToTheme(values)),
+		onValuesChange: (values) => {
+			const areColorsValid =
+				chroma.valid(values.primary) &&
+				chroma.valid(values.neutral) &&
+				[values.pageBackground, values.accentColor, values.borderColor].every((color) => !color || chroma.valid(color));
+
+			if (areColorsValid) {
+				setThemeOverride(valuesToTheme(values));
+			}
+		},
 		validate: {
 			fontUrls: (text: string) =>
 				text
@@ -416,27 +505,21 @@ export default function ThemeBuilder() {
 									/>
 								</Input.Wrapper>
 
-								<Input.Wrapper label="Primary">
-									<ColorPicker
-										key={form.key("primary")}
-										{...form.getInputProps("primary")}
-										format="hex"
-										swatches={PRIMARY_COLOR_POOL}
-										swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
-										fullWidth
-									/>
-								</Input.Wrapper>
+								<ColorInput
+									key={form.key("primary")}
+									{...form.getInputProps("primary")}
+									label="Primary"
+									format="hex"
+									swatches={COLOR_PALETTE}
+								/>
 
-								<Input.Wrapper label="Neutral">
-									<ColorPicker
-										key={form.key("neutral")}
-										{...form.getInputProps("neutral")}
-										format="hex"
-										swatches={NEUTRAL_COLOR_POOL}
-										swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
-										fullWidth
-									/>
-								</Input.Wrapper>
+								<ColorInput
+									key={form.key("neutral")}
+									{...form.getInputProps("neutral")}
+									label="Neutral"
+									format="hex"
+									swatches={COLOR_PALETTE}
+								/>
 							</Stack>
 						</Accordion.Panel>
 					</Accordion.Item>
@@ -521,77 +604,35 @@ export default function ThemeBuilder() {
 									e.preventDefault();
 								}}
 							/>
-							<Input.Wrapper label="Page background">
-								<ColorPicker
-									key={form.key("pageBackground")}
-									{...form.getInputProps("pageBackground")}
-									format="hex"
-									swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
-									fullWidth
-								/>
-							</Input.Wrapper>
-							<Input.Wrapper label="Accent">
-								<ColorPicker
-									key={form.key("accentColor")}
-									{...form.getInputProps("accentColor")}
-									format="hex"
-									swatchesPerRow={NUMBER_OF_COLOR_SWATCHES}
-									fullWidth
-								/>
-							</Input.Wrapper>
+							<ColorInput
+								key={form.key("pageBackground")}
+								{...form.getInputProps("pageBackground")}
+								label="Page background"
+								format="hex"
+								swatches={COLOR_PALETTE}
+							/>
+							<ColorInput
+								key={form.key("accentColor")}
+								{...form.getInputProps("accentColor")}
+								label="Accent"
+								format="hex"
+								swatches={COLOR_PALETTE}
+							/>
+							<ColorInput
+								key={form.key("borderColor")}
+								{...form.getInputProps("borderColor")}
+								label="Border color"
+								format="hex"
+								swatches={COLOR_PALETTE}
+							/>
 						</Accordion.Panel>
 					</Accordion.Item>
 				</Accordion>
 			</AppShell.Navbar>
 
-			<ThemeOverride theme={themeOverride} colorScheme={colorScheme}>
+			<ThemeOverride theme={themeOverride} cssVariablesResolver={cssVariablesResolver} colorScheme={colorScheme}>
 				<AppShell.Main>
-					<Card withBorder h="100%">
-						<Stack>
-							<Group justify="space-between" align="center">
-								<Title order={2}>Live preview</Title>
-
-								<Group>
-									<Badge>New</Badge>
-									<Badge variant="light">Light</Badge>
-									<Badge variant="outline">Outline</Badge>
-								</Group>
-							</Group>
-
-							<Text c="dimmed">
-								Dimmed text under a <Anchor>heading.</Anchor>
-							</Text>
-
-							<Card withBorder>
-								<Stack>
-									<Title order={4}>Sign in</Title>
-									<TextInput label="Email" placeholder="you@example.com" />
-									<Switch label="Remember me" defaultChecked />
-									<Group grow>
-										<Button>Continue</Button>
-										<Button variant="default">Cancel</Button>
-									</Group>
-								</Stack>
-							</Card>
-
-							<Radio.Group defaultValue="weekly" label="Digest">
-								<Stack>
-									<Radio.Card value="weekly">
-										<Group wrap="nowrap">
-											<Radio.Indicator />
-											<Text fw={600}>Weekly</Text>
-										</Group>
-									</Radio.Card>
-									<Radio.Card value="daily">
-										<Group wrap="nowrap">
-											<Radio.Indicator />
-											<Text fw={600}>Daily</Text>
-										</Group>
-									</Radio.Card>
-								</Stack>
-							</Radio.Group>
-						</Stack>
-					</Card>
+					<BackofficePreview />
 				</AppShell.Main>
 			</ThemeOverride>
 		</AppShell>
