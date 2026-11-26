@@ -53,7 +53,7 @@ import {
 import { useForm } from "@mantine/form";
 import chroma from "chroma-js";
 import { useState } from "react";
-import { BackofficePreview } from "./BackofficePreview";
+import { ScreensArea } from "./BackofficePreview";
 import ColorThemeSwitcher from "./ColorThemeSwitcher";
 import { ThemeOverride } from "./components/ThemeOverride";
 import { useStylesheets } from "./use-stylesheets";
@@ -632,7 +632,7 @@ export default function ThemeBuilder() {
 
 			<ThemeOverride theme={themeOverride} cssVariablesResolver={cssVariablesResolver} colorScheme={colorScheme}>
 				<AppShell.Main>
-					<BackofficePreview />
+					<ScreensArea />
 				</AppShell.Main>
 			</ThemeOverride>
 		</AppShell>
