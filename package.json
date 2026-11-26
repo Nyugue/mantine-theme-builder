@@ -23,6 +23,7 @@
 		"@mantine/dates": "^9.8.2",
 		"@mantine/form": "^9.8.1",
 		"@mantine/hooks": "^9.8.1",
+		"@mantine/spotlight": "^9.8.2",
 		"chroma-js": "^3.3.0",
 		"dayjs": "^1.11.23",
 		"react": "^19.3.1",
